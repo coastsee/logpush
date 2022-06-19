@@ -6,7 +6,6 @@ import (
 )
 
 var (
-	pool          []string
 	lastFlushTime = time.Now()
 	poolLength    = 10000
 )
@@ -16,6 +15,7 @@ type Engine interface {
 }
 
 type LogPush struct {
+	pool          []string
 	MaxPoolLength int
 	PushDuration  time.Duration
 	Engine        Engine
@@ -36,17 +36,17 @@ func (l *LogPush) Push(log string) error {
 		l.PushDuration = time.Minute * 5
 	}
 
-	pool = append(pool, log)
-	if len(pool) >= l.MaxPoolLength || lastFlushTime.Add(l.PushDuration).Before(time.Now()) {
+	l.pool = append(l.pool, log)
+	if len(l.pool) >= l.MaxPoolLength || lastFlushTime.Add(l.PushDuration).Before(time.Now()) {
 		lastFlushTime = time.Now()
-		err := l.Engine.Flush(pool)
+		err := l.Engine.Flush(l.pool)
 		if err != nil {
-			if len(pool) > poolLength {
-				pool = []string{}
+			if len(l.pool) > poolLength {
+				l.pool = []string{}
 			}
 			return err
 		}
-		pool = []string{}
+		l.pool = []string{}
 	}
 	return nil
 }
@@ -57,13 +57,13 @@ func (l *LogPush) Flush() error {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 
-	err := l.Engine.Flush(pool)
+	err := l.Engine.Flush(l.pool)
 	if err != nil {
-		if len(pool) > poolLength {
-			pool = []string{}
+		if len(l.pool) > poolLength {
+			l.pool = []string{}
 		}
 		return err
 	}
-	pool = []string{}
+	l.pool = []string{}
 	return nil
 }
