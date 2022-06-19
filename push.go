@@ -9,7 +9,6 @@ var (
 	pool          []string
 	lastFlushTime = time.Now()
 	poolLength    = 10000
-	mux           sync.Mutex
 )
 
 type Engine interface {
@@ -20,13 +19,14 @@ type LogPush struct {
 	MaxPoolLength int
 	PushDuration  time.Duration
 	Engine        Engine
+	mux           sync.Mutex
 }
 
 // Push 根据初始化LogPush条件，决定是否要推送日志。
 // Decide whether to Push logs based on the initial Log Push condition.
 func (l *LogPush) Push(log string) error {
-	mux.Lock()
-	defer mux.Unlock()
+	l.mux.Lock()
+	defer l.mux.Unlock()
 
 	if l.MaxPoolLength == 0 {
 		l.MaxPoolLength = 10000
@@ -54,8 +54,8 @@ func (l *LogPush) Push(log string) error {
 // Flush 立刻将日志池所有日志推送
 // All logs in the log pool are pushed immediately
 func (l *LogPush) Flush() error {
-	mux.Lock()
-	defer mux.Unlock()
+	l.mux.Lock()
+	defer l.mux.Unlock()
 
 	err := l.Engine.Flush(pool)
 	if err != nil {

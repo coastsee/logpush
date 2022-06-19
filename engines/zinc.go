@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -12,10 +13,14 @@ type Zinc struct {
 	Url      string
 	Username string
 	Password string
+	mux      sync.Mutex
 }
 
 // Flush only define Flush func
 func (z *Zinc) Flush(pool []string) error {
+	z.mux.Lock()
+	defer z.mux.Unlock()
+
 	var ndJson string
 	if z.Index == "" {
 		z.Index = "logpush"
