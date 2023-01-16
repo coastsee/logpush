@@ -35,6 +35,15 @@ err := logPush.Push("log content")
 if err != nil {
     fmt.Println(err)
 }
+
+// for zapcore
+core := zapcore.NewCore(
+    encoder,
+    zapcore.NewMultiWriteSyncer(zapcore.AddSync(&toZine{Level: logLevel.String()}),......),
+    zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+        return lvl == logLevel
+    }), // 日志级别
+)
 ```
 ## 参数说明 Parameter
 
